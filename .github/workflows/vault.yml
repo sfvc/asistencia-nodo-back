@@ -1,0 +1,81 @@
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  run_pull:
+    name: run pull
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Vault CLI
+        run: |
+          curl -fsSL https://releases.hashicorp.com/vault/1.15.0/vault_1.15.0_linux_amd64.zip -o vault.zip
+          unzip vault.zip
+          sudo mv vault /usr/local/bin/
+          vault --version
+
+      - name: Set Vault environment variables
+        run: |
+          echo "VAULT_ADDR=${{ secrets.VAULT_ADDR }}" >> $GITHUB_ENV
+          echo "VAULT_TOKEN=${{ secrets.VAULT_ROOT_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Authenticate to Vault with Root Token
+        run: |
+          vault login ${{ secrets.VAULT_ROOT_TOKEN }}
+
+      - name: Read secret from Vault VARIABLES DEL PARA EL HOST (e.g., /kv/sistemas)
+        id: read_secret
+        run: |
+          host=$(vault kv get -mount="kv" -field=host sistemas3)
+          port=$(vault kv get -mount="kv" -field=port sistemas3)
+          user=$(vault kv get -mount="kv" -field=user sistemas3)
+          pass=$(vault kv get -mount="kv" -field=pass sistemas3)
+
+          echo "HOST=$host" >> $GITHUB_ENV
+          echo "PORT=$port" >> $GITHUB_ENV
+          echo "USER=$user" >> $GITHUB_ENV
+          echo "PASS=$pass" >> $GITHUB_ENV
+
+          echo "host=$host" >> $GITHUB_OUTPUT
+          echo "port=$port" >> $GITHUB_OUTPUT
+          echo "user=$user" >> $GITHUB_OUTPUT
+          echo "pass=$pass" >> $GITHUB_OUTPUT
+        
+      - name: Ejecutar comandos remotos por SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+            host: ${{ env.HOST }}
+            username: ${{ env.USER }}
+            password: ${{ env.PASS }}
+            port: ${{ env.PORT }}
+            script: |
+              echo "Downloading repository..."
+              
+              # Obtener nombre del repositorio (sin el owner)
+              echo "GITHUB_REPOSITORY=git@github.com:${{ github.repository }}.git"  
+              REPO_NAME=$(basename "${{ github.repository }}")   
+              echo "REPO_NAME=${REPO_NAME}"        
+              if [ ! -d "/home/${REPO_NAME}" ]; then
+                cd /home
+                git clone git@github.com:${{ github.repository }}.git
+              fi        
+              cd /home/${REPO_NAME}
+              git checkout main
+              git pull
+              echo "Repository downloaded successfully."             
+              docker stop api_asistencia_nodo || true
+              docker rm api_asistencia_nodo -f
+              docker rmi municipalidad/api_asistencia_nodo:latest -f
+              docker container prune -f || true
+              docker image prune -a || true
+              docker build --no-cache --pull -t municipalidad/api_asistencia_nodo:latest .
+              docker run --restart=always -d -p 7020:4000 \
+                -e DATABASE_URL='${{ secrets.DATABASE_URL }}' \
+                -e API_URL='${{ secrets.JWT_SECRET}}' \
+                --name api_asistencia_nodo municipalidad/api_asistencia_nodo:latest
+              exit
