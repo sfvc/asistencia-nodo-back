@@ -49,8 +49,7 @@ jobs:
             password: ${{ steps.read_secret.outputs.pass }}
             port: ${{ steps.read_secret.outputs.port }}
             script: |
-              echo "Downloading repository..."           
-           
+              echo "Downloading repository..."              
               # Obtener nombre del repositorio (sin el owner)
               echo "GITHUB_REPOSITORY=git@github.com:${{ github.repository }}.git"  
               REPO_NAME=$(basename "${{ github.repository }}")   
@@ -62,11 +61,10 @@ jobs:
               cd /home/${REPO_NAME}
               git checkout main
               git pull
-              echo "Repository downloaded successfully."                 
+              echo "Repository downloaded successfully."                  
               docker stop api_asistencia_nodo || true
-              docker rm api_asistencia_nodo -f
-              docker rmi municipalidad/api_asistencia_nodo:latest -f
-              docker container prune -f || true
+              docker rm api_asistencia_nodo -f || true
+              docker rmi municipalidad/api_asistencia_nodo:latest -f || true          
               docker image prune -a || true
               docker build --no-cache --pull -t municipalidad/api_asistencia_nodo:latest .
               docker run --restart=always -d -p 7020:4000 \
