@@ -73,9 +73,5 @@ jobs:
               docker rmi municipalidad/api_asistencia_nodo:latest -f
               docker container prune -f || true
               docker image prune -a || true
-              docker build --no-cache --pull -t municipalidad/api_asistencia_nodo:latest .
-              docker run --restart=always -d -p 7020:4000 \
-                -e DATABASE_URL='${{ secrets.DATABASE_URL }}' \
-                -e API_URL='${{ secrets.JWT_SECRET}}' \
-                --name api_asistencia_nodo municipalidad/api_asistencia_nodo:latest
+
               exit
