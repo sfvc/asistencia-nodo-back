@@ -31,28 +31,23 @@ jobs:
       - name: Read secret from Vault VARIABLES DEL PARA EL HOST (e.g., /kv/sistemas)
         id: read_secret
         run: |
-          host=$(vault kv get -mount="kv" -field=host sistemas3)
-          port=$(vault kv get -mount="kv" -field=port sistemas3)
-          user=$(vault kv get -mount="kv" -field=user sistemas3)
-          pass=$(vault kv get -mount="kv" -field=pass sistemas3)
+          echo "::add-mask::$(vault kv get -mount=kv -field=host sistemas3)"
+          echo "::add-mask::$(vault kv get -mount=kv -field=port sistemas3)"
+          echo "::add-mask::$(vault kv get -mount=kv -field=user sistemas3)"
+          echo "::add-mask::$(vault kv get -mount=kv -field=pass sistemas3)"
 
-          echo "HOST=$host" >> $GITHUB_ENV
-          echo "PORT=$port" >> $GITHUB_ENV
-          echo "USER=$user" >> $GITHUB_ENV
-          echo "PASS=$pass" >> $GITHUB_ENV
-
-          echo "host=$host" >> $GITHUB_OUTPUT
-          echo "port=$port" >> $GITHUB_OUTPUT
-          echo "user=$user" >> $GITHUB_OUTPUT
-          echo "pass=$pass" >> $GITHUB_OUTPUT
+          echo "host=$(vault kv get -mount=kv -field=host sistemas3)" >> $GITHUB_OUTPUT
+          echo "port=$(vault kv get -mount=kv -field=port sistemas3)" >> $GITHUB_OUTPUT
+          echo "user=$(vault kv get -mount=kv -field=user sistemas3)" >> $GITHUB_OUTPUT
+          echo "pass=$(vault kv get -mount=kv -field=pass sistemas3)" >> $GITHUB_OUTPUT
         
       - name: Ejecutar comandos remotos por SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
-            host: ${{ env.HOST }}
-            username: ${{ env.USER }}
-            password: ${{ env.PASS }}
-            port: ${{ env.PORT }}
+            host: ${{ steps.read_secret.outputs.host }}
+            username: ${{ steps.read_secret.outputs.user }}
+            password: ${{ steps.read_secret.outputs.pass }}
+            port: ${{ steps.read_secret.outputs.port }}
             script: |
               echo "Downloading repository..."           
            
