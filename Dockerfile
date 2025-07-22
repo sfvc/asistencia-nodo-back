@@ -1,7 +1,6 @@
 # Etapa 1: Build
 FROM node:22.14.0-slim AS builder
 
- agregar las variables de entorno necesarias para Prisma y NestJS
 ARG DATABASE_URL
 ARG JWT_SECRET
 ENV DATABASE_URL=${DATABASE_URL}
