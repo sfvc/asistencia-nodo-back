@@ -65,10 +65,5 @@ jobs:
               docker stop api_asistencia_nodo || true
               docker rm api_asistencia_nodo || true
               docker rmi municipalidad/api_asistencia_nodo:latest || true
-              docker build -t municipalidad/api_asistencia_nodo:latest .
-              docker run -d --restart=always -p 0.0.0.0:3000:3000 \
-                -e DATABASE_URL='${{ secrets.DATABASE_URL }}' \
-                -e JWT_SECRET='${{ secrets.JWT_SECRET }}' \
-                --name api_asistencia_nodo municipalidad/api_asistencia_nodo:latest
               docker logs api_asistencia_nodo
               exit
